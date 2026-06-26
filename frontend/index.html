@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VoiceAI — Intelligent Voice Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:       #0A1628;
+      --navy-mid:   #1E3A5F;
+      --blue:       #2D6BE4;
+      --blue-light: #4A84F5;
+      --blue-pale:  #EBF1FF;
+      --ice:        #F0F4FF;
+      --white:      #FFFFFF;
+      --slate:      #64748B;
+      --slate-light:#94A3B8;
+      --slate-dark: #334155;
+      --border:     #DDE5F5;
+      --success:    #10B981;
+      --error:      #EF4444;
+      --warn:       #F59E0B;
+      --radius-sm:  6px;
+      --radius-md:  12px;
+      --radius-lg:  20px;
+      --shadow-sm:  0 1px 3px rgba(10,22,40,0.08);
+      --shadow-md:  0 4px 16px rgba(10,22,40,0.10);
+      --shadow-lg:  0 12px 40px rgba(10,22,40,0.14);
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', sans-serif;
+      background: var(--ice);
+      color: var(--slate-dark);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* ── Layout ── */
+    .app {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      grid-template-rows: 56px 1fr;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      grid-column: 1 / -1;
+      background: var(--navy);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .topbar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .topbar-icon {
+      width: 28px; height: 28px;
+      background: var(--blue);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .topbar-icon svg { width: 16px; height: 16px; fill: white; }
+    .topbar-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: -0.3px;
+    }
+    .topbar-name span { color: var(--blue-light); }
+    .topbar-sep {
+      width: 1px; height: 20px;
+      background: rgba(255,255,255,0.12);
+      margin: 0 12px;
+    }
+    .topbar-sub {
+      font-size: 12px;
+      color: var(--slate-light);
+      font-weight: 400;
+    }
+    .topbar-status {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--slate-light);
+    }
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 0 2px rgba(16,185,129,0.25);
+    }
+    .status-dot.error { background: var(--error); box-shadow: 0 0 0 2px rgba(239,68,68,0.25); }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      background: var(--white);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .sidebar-header {
+      padding: 20px 20px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--slate);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .sidebar-sessions {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    .sidebar-sessions::-webkit-scrollbar { width: 4px; }
+    .sidebar-sessions::-webkit-scrollbar-track { background: transparent; }
+    .sidebar-sessions::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .session-item {
+      padding: 12px;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-bottom: 2px;
+      border: 1px solid transparent;
+    }
+    .session-item:hover { background: var(--ice); }
+    .session-item.active {
+      background: var(--blue-pale);
+      border-color: rgba(45,107,228,0.2);
+    }
+    .session-item-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .session-badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .session-badge.completed { background: #D1FAE5; color: #065F46; }
+    .session-badge.failed    { background: #FEE2E2; color: #991B1B; }
+    .session-badge.pending   { background: #FEF3C7; color: #92400E; }
+    .session-time {
+      font-size: 11px;
+      color: var(--slate-light);
+      font-family: 'DM Mono', monospace;
+    }
+    .session-text {
+      font-size: 12px;
+      color: var(--slate-dark);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .session-text.empty { color: var(--slate-light); font-style: italic; }
+    .sidebar-empty {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--slate-light);
+      font-size: 13px;
+    }
+    .sidebar-empty svg { width: 32px; height: 32px; margin-bottom: 12px; opacity: 0.3; }
+
+    /* ── Main panel ── */
+    .main {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .main-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .main-scroll::-webkit-scrollbar { width: 6px; }
+    .main-scroll::-webkit-scrollbar-track { background: transparent; }
+    .main-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* ── Mic hero ── */
+    .mic-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      padding: 40px 0 32px;
+    }
+    .mic-rings {
+      position: relative;
+      width: 140px; height: 140px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .mic-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 2px solid var(--blue);
+      opacity: 0;
+      animation: none;
+    }
+    .mic-ring:nth-child(1) { width: 100%; height: 100%; }
+    .mic-ring:nth-child(2) { width: 80%;  height: 80%; }
+    .mic-ring:nth-child(3) { width: 60%;  height: 60%; }
+    @keyframes ripple {
+      0%   { transform: scale(0.85); opacity: 0.5; }
+      100% { transform: scale(1.1);  opacity: 0; }
+    }
+    .recording .mic-ring:nth-child(1) { animation: ripple 1.6s ease-out infinite; }
+    .recording .mic-ring:nth-child(2) { animation: ripple 1.6s ease-out 0.3s infinite; }
+    .recording .mic-ring:nth-child(3) { animation: ripple 1.6s ease-out 0.6s infinite; }
+
+    .mic-btn {
+      width: 88px; height: 88px;
+      border-radius: 50%;
+      background: var(--blue);
+      border: none;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 8px 32px rgba(45,107,228,0.4);
+      transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+      position: relative;
+      z-index: 1;
+    }
+    .mic-btn:hover {
+      background: var(--blue-light);
+      box-shadow: 0 8px 40px rgba(45,107,228,0.55);
+      transform: scale(1.04);
+    }
+    .mic-btn:active { transform: scale(0.97); }
+    .mic-btn.recording {
+      background: var(--error);
+      box-shadow: 0 8px 32px rgba(239,68,68,0.4);
+      animation: pulse-btn 0.8s ease-in-out infinite alternate;
+    }
+    @keyframes pulse-btn {
+      from { box-shadow: 0 8px 32px rgba(239,68,68,0.3); }
+      to   { box-shadow: 0 8px 48px rgba(239,68,68,0.6); }
+    }
+    .mic-btn svg { width: 36px; height: 36px; fill: white; }
+
+    .mic-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--slate);
+      text-align: center;
+    }
+    .mic-label strong { color: var(--slate-dark); }
+
+    /* ── Waveform bars (signature element) ── */
+    .waveform {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      height: 32px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .waveform.active { opacity: 1; }
+    .waveform-bar {
+      width: 3px;
+      background: var(--blue);
+      border-radius: 2px;
+      animation: none;
+      height: 4px;
+      transition: height 0.1s;
+    }
+    @keyframes wave {
+      0%, 100% { height: 4px; }
+      50%       { height: var(--h); }
+    }
+    .waveform.active .waveform-bar { animation: wave 0.8s ease-in-out infinite; }
+    .waveform-bar:nth-child(1)  { --h: 12px; animation-delay: 0.0s; }
+    .waveform-bar:nth-child(2)  { --h: 24px; animation-delay: 0.1s; }
+    .waveform-bar:nth-child(3)  { --h: 18px; animation-delay: 0.2s; }
+    .waveform-bar:nth-child(4)  { --h: 28px; animation-delay: 0.05s; }
+    .waveform-bar:nth-child(5)  { --h: 20px; animation-delay: 0.15s; }
+    .waveform-bar:nth-child(6)  { --h: 30px; animation-delay: 0.25s; }
+    .waveform-bar:nth-child(7)  { --h: 16px; animation-delay: 0.1s; }
+    .waveform-bar:nth-child(8)  { --h: 26px; animation-delay: 0.2s; }
+    .waveform-bar:nth-child(9)  { --h: 22px; animation-delay: 0.05s; }
+    .waveform-bar:nth-child(10) { --h: 14px; animation-delay: 0.3s; }
+    .waveform-bar:nth-child(11) { --h: 28px; animation-delay: 0.15s; }
+    .waveform-bar:nth-child(12) { --h: 18px; animation-delay: 0.0s; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card-icon {
+      width: 30px; height: 30px;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .card-icon.transcribe { background: #EFF6FF; }
+    .card-icon.ai         { background: #F0FDF4; }
+    .card-icon.audio      { background: #FFF7ED; }
+    .card-icon svg { width: 16px; height: 16px; }
+    .card-icon.transcribe svg { fill: #2563EB; }
+    .card-icon.ai svg         { fill: #059669; }
+    .card-icon.audio svg      { fill: #D97706; }
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--slate-dark);
+    }
+    .card-step {
+      margin-left: auto;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--slate-light);
+      font-family: 'DM Mono', monospace;
+    }
+    .card-body { padding: 20px; }
+    .card-placeholder {
+      font-size: 13px;
+      color: var(--slate-light);
+      font-style: italic;
+      text-align: center;
+      padding: 12px 0;
+    }
+
+    /* ── Transcription text ── */
+    .transcription-text {
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      color: var(--slate-dark);
+      line-height: 1.7;
+      background: var(--ice);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      min-height: 56px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .transcription-text.empty {
+      color: var(--slate-light);
+      font-style: italic;
+    }
+
+    /* ── AI response ── */
+    .ai-response-text {
+      font-size: 14px;
+      color: var(--slate-dark);
+      line-height: 1.7;
+      padding: 4px 0;
+    }
+    .ai-response-text.empty {
+      color: var(--slate-light);
+      font-style: italic;
+      font-size: 13px;
+      text-align: center;
+      padding: 12px 0;
+    }
+
+    /* ── Audio player ── */
+    .audio-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .audio-player {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--ice);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+    }
+    .play-btn {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: var(--blue);
+      border: none;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .play-btn:hover { background: var(--blue-light); transform: scale(1.05); }
+    .play-btn:active { transform: scale(0.95); }
+    .play-btn svg { width: 16px; height: 16px; fill: white; }
+    .play-btn:disabled { background: var(--slate-light); cursor: not-allowed; }
+    .play-btn:disabled:hover { transform: none; }
+    .audio-info { flex: 1; min-width: 0; }
+    .audio-filename {
+      font-size: 12px;
+      font-family: 'DM Mono', monospace;
+      color: var(--slate-dark);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .audio-label {
+      font-size: 11px;
+      color: var(--slate-light);
+      margin-top: 2px;
+    }
+    audio { width: 100%; height: 32px; }
+    audio::-webkit-media-controls-panel { background: var(--ice); }
+
+    /* ── Pipeline progress ── */
+    .pipeline {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      padding: 0 4px;
+    }
+    .pipeline-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+    }
+    .pipeline-dot {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: var(--white);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--slate-light);
+      transition: all 0.3s;
+    }
+    .pipeline-dot.active {
+      border-color: var(--blue);
+      background: var(--blue);
+      color: white;
+    }
+    .pipeline-dot.done {
+      border-color: var(--success);
+      background: var(--success);
+      color: white;
+    }
+    .pipeline-dot.error {
+      border-color: var(--error);
+      background: var(--error);
+      color: white;
+    }
+    .pipeline-dot svg { width: 12px; height: 12px; fill: white; }
+    .pipeline-label {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--slate-light);
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .pipeline-label.active { color: var(--blue); }
+    .pipeline-label.done   { color: var(--success); }
+    .pipeline-connector {
+      height: 2px;
+      flex: 1;
+      background: var(--border);
+      margin-bottom: 22px;
+      transition: background 0.3s;
+      max-width: 48px;
+    }
+    .pipeline-connector.done { background: var(--success); }
+
+    /* ── Pipeline card ── */
+    .pipeline-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .pipeline-card-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--slate);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 16px;
+    }
+
+    /* ── Toast ── */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 9999;
+    }
+    .toast {
+      background: var(--navy);
+      color: white;
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: slide-in 0.25s ease;
+      max-width: 320px;
+    }
+    .toast.success { background: #065F46; }
+    .toast.error   { background: #991B1B; }
+    @keyframes slide-in {
+      from { transform: translateX(20px); opacity: 0; }
+      to   { transform: translateX(0);    opacity: 1; }
+    }
+    .toast svg { width: 16px; height: 16px; fill: white; flex-shrink: 0; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+      font-family: 'Inter', sans-serif;
+    }
+    .btn-primary { background: var(--blue); color: white; }
+    .btn-primary:hover { background: var(--blue-light); }
+    .btn-ghost { background: transparent; color: var(--slate); border: 1px solid var(--border); }
+    .btn-ghost:hover { background: var(--ice); }
+    .btn-danger { background: transparent; color: var(--error); border: 1px solid #FECACA; }
+    .btn-danger:hover { background: #FEF2F2; }
+    .btn svg { width: 14px; height: 14px; fill: currentColor; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* ── Section divider ── */
+    .divider {
+      display: flex; align-items: center; gap: 12px;
+      color: var(--slate-light); font-size: 11px; font-weight: 500;
+      text-transform: uppercase; letter-spacing: 0.6px;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* ── Loader ── */
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner.dark {
+      border-color: rgba(45,107,228,0.2);
+      border-top-color: var(--blue);
+    }
+
+    /* ── Upload fallback ── */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .upload-zone:hover { border-color: var(--blue); background: var(--blue-pale); }
+    .upload-zone input { display: none; }
+    .upload-zone-text {
+      font-size: 13px; color: var(--slate);
+      margin-top: 8px;
+    }
+    .upload-zone-text span { color: var(--blue); font-weight: 500; }
+
+    @media (max-width: 768px) {
+      .app { grid-template-columns: 1fr; grid-template-rows: 56px auto 1fr; }
+      .sidebar { display: none; }
+      .main-scroll { padding: 16px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ── Top bar ── -->
+  <header class="topbar">
+    <div class="topbar-logo">
+      <div class="topbar-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3zm-1 3a1 1 0 0 1 2 0v8a1 1 0 0 1-2 0V4zm8.3 7.7a1 1 0 0 0-1.96.38A7 7 0 0 1 5.66 12a1 1 0 0 0-1.96-.3A9 9 0 0 0 11 19.94V22h-2a1 1 0 0 0 0 2h6a1 1 0 0 0 0-2h-2v-2.06A9 9 0 0 0 20.3 11.7z"/></svg>
+      </div>
+      <span class="topbar-name">Voice<span>AI</span></span>
+    </div>
+    <div class="topbar-sep"></div>
+    <span class="topbar-sub">Powered by OpenAI Whisper · GPT-4o-mini · TTS</span>
+    <div class="topbar-status" id="apiStatus">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">Connected</span>
+    </div>
+  </header>
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <span class="sidebar-title">Session History</span>
+        <button class="btn btn-danger" id="clearAllBtn" onclick="clearAllSessions()" style="padding:4px 10px;font-size:11px;display:none">
+          <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+          Clear all
+        </button>
+      </div>
+    </div>
+    <div class="sidebar-sessions" id="sessionList">
+      <div class="sidebar-empty" id="emptyState">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3zM19 11a7 7 0 0 1-14 0"/></svg>
+        <div>No sessions yet.<br>Record something to start.</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="main">
+    <div class="main-scroll">
+
+      <!-- Mic hero -->
+      <div class="mic-hero">
+        <div class="mic-rings" id="micRings">
+          <div class="mic-ring"></div>
+          <div class="mic-ring"></div>
+          <div class="mic-ring"></div>
+          <button class="mic-btn" id="micBtn" onclick="toggleRecording()">
+            <svg id="micIcon" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3zm-1 3a1 1 0 0 1 2 0v8a1 1 0 0 1-2 0V4zm8.3 7.7a1 1 0 0 0-1.96.38A7 7 0 0 1 5.66 12a1 1 0 0 0-1.96-.3A9 9 0 0 0 11 19.94V22h-2a1 1 0 0 0 0 2h6a1 1 0 0 0 0-2h-2v-2.06A9 9 0 0 0 20.3 11.7z"/></svg>
+          </button>
+        </div>
+        <div class="waveform" id="waveform">
+          <div class="waveform-bar"></div><div class="waveform-bar"></div>
+          <div class="waveform-bar"></div><div class="waveform-bar"></div>
+          <div class="waveform-bar"></div><div class="waveform-bar"></div>
+          <div class="waveform-bar"></div><div class="waveform-bar"></div>
+          <div class="waveform-bar"></div><div class="waveform-bar"></div>
+          <div class="waveform-bar"></div><div class="waveform-bar"></div>
+        </div>
+        <div class="mic-label" id="micLabel"><strong>Click to record</strong> — speak your question</div>
+
+        <!-- Upload fallback -->
+        <label class="upload-zone" style="width:100%;max-width:380px">
+          <input type="file" accept="audio/*" id="audioUpload" onchange="handleFileUpload(event)" />
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--slate-light)"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+          <div class="upload-zone-text">Or <span>upload an audio file</span> directly</div>
+        </label>
+      </div>
+
+      <!-- Pipeline progress -->
+      <div class="pipeline-card" id="pipelineCard" style="display:none">
+        <div class="pipeline-card-title">Processing pipeline</div>
+        <div class="pipeline">
+          <div class="pipeline-step">
+            <div class="pipeline-dot" id="step1dot">1</div>
+            <div class="pipeline-label" id="step1label">Transcribe</div>
+          </div>
+          <div class="pipeline-connector" id="conn1"></div>
+          <div class="pipeline-step">
+            <div class="pipeline-dot" id="step2dot">2</div>
+            <div class="pipeline-label" id="step2label">Generate</div>
+          </div>
+          <div class="pipeline-connector" id="conn2"></div>
+          <div class="pipeline-step">
+            <div class="pipeline-dot" id="step3dot">3</div>
+            <div class="pipeline-label" id="step3label">Synthesize</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transcription card -->
+      <div class="card" id="transcriptionCard">
+        <div class="card-header">
+          <div class="card-icon transcribe">
+            <svg viewBox="0 0 24 24"><path d="M9 12h6M9 16h6M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-7-7z"/></svg>
+          </div>
+          <span class="card-title">Transcription</span>
+          <span class="card-step">Step 01</span>
+        </div>
+        <div class="card-body">
+          <div class="transcription-text empty" id="transcriptionText">Your words will appear here after recording…</div>
+        </div>
+      </div>
+
+      <!-- AI response card -->
+      <div class="card" id="aiCard">
+        <div class="card-header">
+          <div class="card-icon ai">
+            <svg viewBox="0 0 24 24"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2zM9 14a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm6 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/></svg>
+          </div>
+          <span class="card-title">AI Response</span>
+          <span class="card-step">Step 02</span>
+        </div>
+        <div class="card-body">
+          <div class="ai-response-text empty" id="aiResponseText">AI reply will appear here…</div>
+        </div>
+      </div>
+
+      <!-- Audio response card -->
+      <div class="card" id="audioCard">
+        <div class="card-header">
+          <div class="card-icon audio">
+            <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm12-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/></svg>
+          </div>
+          <span class="card-title">Voice Response</span>
+          <span class="card-step">Step 03</span>
+        </div>
+        <div class="card-body">
+          <div class="audio-section" id="audioSection">
+            <div class="card-placeholder" id="audioPlaceholder">Synthesized speech will be available here…</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+  const API_BASE = 'http://127.0.0.1:8000/api/v1/voice';
+
+  // ── State ──
+  let isRecording = false;
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let sessions = [];
+  let activeSessionId = null;
+
+  // ── DOM refs ──
+  const micBtn     = document.getElementById('micBtn');
+  const micIcon    = document.getElementById('micIcon');
+  const micRings   = document.getElementById('micRings');
+  const micLabel   = document.getElementById('micLabel');
+  const waveform   = document.getElementById('waveform');
+
+  // ── On load ──
+  window.addEventListener('load', () => {
+    loadSessions();
+    checkApiStatus();
+  });
+
+  // ── API status ──
+  async function checkApiStatus() {
+    try {
+      const r = await fetch(`${API_BASE}/sessions/list/`, { signal: AbortSignal.timeout(3000) });
+      if (r.ok) setStatus(true);
+      else setStatus(false);
+    } catch {
+      setStatus(false);
+    }
+  }
+  function setStatus(ok) {
+    document.getElementById('statusDot').className = 'status-dot' + (ok ? '' : ' error');
+    document.getElementById('statusText').textContent = ok ? 'Connected' : 'API offline';
+  }
+
+  // ── Recording ──
+  async function toggleRecording() {
+    try {
+      if (isRecording) {
+        stopRecording();
+      } else {
+        await startRecording();
+      }
+    } catch (err) {
+      showToast('Recording error: ' + err.message, 'error');
+      setRecordingUI(false);
+    }
+  }
+
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream, { mimeType: getSupportedMimeType() });
+      audioChunks = [];
+
+      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        const mimeType = getSupportedMimeType();
+        const blob = new Blob(audioChunks, { type: mimeType });
+        const ext = mimeType.includes('webm') ? 'webm' : mimeType.includes('mp4') ? 'mp4' : 'wav';
+        const file = new File([blob], `recording.${ext}`, { type: mimeType });
+        await processAudio(file);
+      };
+
+      mediaRecorder.start(100);
+      setRecordingUI(true);
+    } catch (err) {
+      if (err.name === 'NotAllowedError') {
+        showToast('Microphone permission denied. Please allow access and try again.', 'error');
+      } else {
+        showToast('Could not access microphone: ' + err.message, 'error');
+      }
+    }
+  }
+
+  function getSupportedMimeType() {
+    const types = ['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg'];
+    return types.find(t => MediaRecorder.isTypeSupported(t)) || 'audio/webm';
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+    }
+    setRecordingUI(false);
+  }
+
+  function setRecordingUI(recording) {
+    isRecording = recording;
+    micBtn.classList.toggle('recording', recording);
+    micRings.classList.toggle('recording', recording);
+    waveform.classList.toggle('active', recording);
+
+    micIcon.innerHTML = recording
+      ? '<rect x="6" y="6" width="12" height="12" rx="2"/>'
+      : '<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3zm-1 3a1 1 0 0 1 2 0v8a1 1 0 0 1-2 0V4zm8.3 7.7a1 1 0 0 0-1.96.38A7 7 0 0 1 5.66 12a1 1 0 0 0-1.96-.3A9 9 0 0 0 11 19.94V22h-2a1 1 0 0 0 0 2h6a1 1 0 0 0 0-2h-2v-2.06A9 9 0 0 0 20.3 11.7z"/>';
+
+    micLabel.innerHTML = recording
+      ? '<strong>Recording…</strong> click to stop'
+      : '<strong>Click to record</strong> — speak your question';
+  }
+
+  async function handleFileUpload(e) {
+    try {
+      const file = e.target.files[0];
+      if (!file) return;
+      await processAudio(file);
+    } catch (err) {
+      showToast('File upload error: ' + err.message, 'error');
+    } finally {
+      e.target.value = '';
+    }
+  }
+
+  // ── Main pipeline ──
+  async function processAudio(file) {
+    resetCards();
+    showPipeline();
+
+    const formData = new FormData();
+    formData.append('audio', file);
+
+    try {
+      setStep(1, 'active');
+      micLabel.innerHTML = '<div class="spinner dark" style="display:inline-block;vertical-align:middle;margin-right:8px"></div> Processing your voice…';
+      micBtn.disabled = true;
+
+      const res = await fetch(`${API_BASE}/process/`, { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (!res.ok) {
+        const msg = data?.detail || 'Something went wrong. Please try again.';
+        setStep(1, 'error'); setStep(2, 'error'); setStep(3, 'error');
+        showToast(msg, 'error');
+        micLabel.innerHTML = '<strong>Click to record</strong> — speak your question';
+        micBtn.disabled = false;
+        return;
+      }
+
+      // Step 1 done — show transcription
+      setStep(1, 'done'); setConnector(1, 'done');
+      setTranscription(data.transcribed_text);
+
+      // Step 2 done — show AI response
+      await delay(300);
+      setStep(2, 'done'); setConnector(2, 'done');
+      setAiResponse(data.ai_response_text);
+
+      // Step 3 done — show audio
+      await delay(300);
+      setStep(3, 'done');
+      setAudioPlayer(data.response_audio_path);
+
+      micLabel.innerHTML = '<strong>Click to record</strong> — speak your question';
+      micBtn.disabled = false;
+
+      showToast('Response ready!', 'success');
+      loadSessions();
+
+    } catch (err) {
+      setStep(1, 'error');
+      showToast('Cannot reach the API. Make sure the server is running on port 8000.', 'error');
+      micLabel.innerHTML = '<strong>Click to record</strong> — speak your question';
+      micBtn.disabled = false;
+    }
+  }
+
+  // ── Pipeline UI ──
+  function showPipeline() {
+    document.getElementById('pipelineCard').style.display = 'block';
+  }
+  function setStep(n, state) {
+    const dot   = document.getElementById(`step${n}dot`);
+    const label = document.getElementById(`step${n}label`);
+    dot.className   = `pipeline-dot ${state}`;
+    label.className = `pipeline-label ${state}`;
+    if (state === 'active') {
+      dot.innerHTML = '<div class="spinner" style="width:12px;height:12px;border-width:2px"></div>';
+    } else if (state === 'done') {
+      dot.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>';
+    } else if (state === 'error') {
+      dot.innerHTML = '<svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+    } else {
+      dot.textContent = n;
+    }
+  }
+  function setConnector(n, state) {
+    document.getElementById(`conn${n}`).className = `pipeline-connector ${state}`;
+  }
+
+  // ── Card updates ──
+  function resetCards() {
+    const t = document.getElementById('transcriptionText');
+    t.textContent = 'Transcribing…';
+    t.className = 'transcription-text empty';
+    const a = document.getElementById('aiResponseText');
+    a.textContent = 'Generating response…';
+    a.className = 'ai-response-text empty';
+    document.getElementById('audioPlaceholder') && (document.getElementById('audioSection').innerHTML = '<div class="card-placeholder" id="audioPlaceholder">Synthesizing voice…</div>');
+    setStep(1, ''); setStep(2, ''); setStep(3, '');
+    document.getElementById('conn1').className = 'pipeline-connector';
+    document.getElementById('conn2').className = 'pipeline-connector';
+  }
+
+  function setTranscription(text) {
+    const el = document.getElementById('transcriptionText');
+    el.textContent = text || '(no transcription)';
+    el.className = 'transcription-text';
+  }
+
+  function setAiResponse(text) {
+    const el = document.getElementById('aiResponseText');
+    el.textContent = text || '(no response)';
+    el.className = 'ai-response-text';
+  }
+
+  function setAudioPlayer(path) {
+    const section = document.getElementById('audioSection');
+    if (!path) {
+      section.innerHTML = '<div class="card-placeholder">No audio file generated.</div>';
+      return;
+    }
+    const safeFilename = escapeHtml(path.split('/').pop());
+    const audio = document.createElement('audio');
+    audio.controls = true;
+    audio.src = `http://127.0.0.1:8000/${encodeURI(path)}`;
+    audio.style.cssText = 'width:100%;margin-top:4px';
+
+    const playerDiv = document.createElement('div');
+    playerDiv.className = 'audio-player';
+    playerDiv.innerHTML = `
+      <div class="audio-info">
+        <div class="audio-filename">${safeFilename}</div>
+        <div class="audio-label">AI voice response</div>
+      </div>
+    `;
+
+    section.innerHTML = '';
+    section.appendChild(playerDiv);
+    section.appendChild(audio);
+  }
+
+  // ── Sessions ──
+  async function loadSessions() {
+    try {
+      const res = await fetch(`${API_BASE}/sessions/list/`);
+      if (!res.ok) return;
+      sessions = await res.json();
+      renderSessions();
+    } catch { /* silently fail */ }
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function renderSessions() {
+    const list  = document.getElementById('sessionList');
+    const empty = document.getElementById('emptyState');
+    const clearBtn = document.getElementById('clearAllBtn');
+
+    if (!sessions.length) {
+      list.innerHTML = '';
+      list.appendChild(empty);
+      clearBtn.style.display = 'none';
+      return;
+    }
+
+    clearBtn.style.display = '';
+    list.innerHTML = sessions.map(s => `
+      <div class="session-item ${s.session_id === activeSessionId ? 'active' : ''}"
+           onclick="viewSession(${Number(s.session_id)})">
+        <div class="session-item-top">
+          <span class="session-badge ${escapeHtml(s.status)}">${escapeHtml(s.status)}</span>
+          <span class="session-time">${escapeHtml(formatTime(s.created_at))}</span>
+        </div>
+        <div class="session-text ${s.transcribed_text ? '' : 'empty'}">
+          ${escapeHtml(s.transcribed_text) || 'No transcription'}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function viewSession(id) {
+    activeSessionId = id;
+    renderSessions();
+
+    try {
+      const res = await fetch(`${API_BASE}/sessions/${id}/detail/`);
+      if (!res.ok) { showToast('Could not load session.', 'error'); return; }
+      const s = await res.json();
+
+      document.getElementById('pipelineCard').style.display = 'block';
+      setStep(1, s.status === 'completed' ? 'done' : s.status === 'failed' ? 'error' : '');
+      setStep(2, s.status === 'completed' ? 'done' : s.status === 'failed' ? 'error' : '');
+      setStep(3, s.status === 'completed' ? 'done' : s.status === 'failed' ? 'error' : '');
+      if (s.status === 'completed') {
+        setConnector(1, 'done'); setConnector(2, 'done');
+      }
+
+      setTranscription(s.transcribed_text);
+      setAiResponse(s.ai_response_text);
+      setAudioPlayer(s.response_audio_path);
+    } catch {
+      showToast('Could not load session details.', 'error');
+    }
+  }
+
+  async function clearAllSessions() {
+    if (!confirm('Delete all sessions? This cannot be undone.')) return;
+    try {
+      const res = await fetch(`${API_BASE}/sessions/delete-all/`, { method: 'DELETE' });
+      if (!res.ok) { showToast('Failed to clear sessions.', 'error'); return; }
+      const data = await res.json();
+      sessions = [];
+      activeSessionId = null;
+      renderSessions();
+      showToast(`Cleared ${data.deleted_count} session${data.deleted_count !== 1 ? 's' : ''}.`);
+      document.getElementById('pipelineCard').style.display = 'none';
+      document.getElementById('transcriptionText').textContent = 'Your words will appear here after recording…';
+      document.getElementById('transcriptionText').className = 'transcription-text empty';
+      document.getElementById('aiResponseText').textContent = 'AI reply will appear here…';
+      document.getElementById('aiResponseText').className = 'ai-response-text empty';
+      document.getElementById('audioSection').innerHTML = '<div class="card-placeholder" id="audioPlaceholder">Synthesized speech will be available here…</div>';
+    } catch {
+      showToast('Could not reach the API.', 'error');
+    }
+  }
+
+  // ── Helpers ──
+  function formatTime(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function showToast(msg, type = '') {
+    const icons = {
+      success: '<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>',
+      error:   '<svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+      '':      '<svg viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>',
+    };
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.innerHTML = `${icons[type] || icons['']}${msg}`;
+    document.getElementById('toastContainer').appendChild(t);
+    setTimeout(() => t.remove(), 4000);
+  }
+</script>
+
+</body>
+</html>

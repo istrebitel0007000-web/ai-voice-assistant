@@ -20,11 +20,13 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "corsheaders",
     "apps.core",
     "apps.voice",
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -53,6 +55,9 @@ REST_FRAMEWORK = {
 }
 
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+
+# CORS — allow the frontend to call the API from the browser
+CORS_ALLOW_ALL_ORIGINS = True  # Fine for local dev; restrict in production
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
