@@ -1,0 +1,15 @@
+[
+  {
+    "model": "voice.VoiceSession",
+    "pk": 1,
+    "fields": {
+      "user_audio_path": "test_audio.wav",
+      "transcribed_text": "What is the capital of France?",
+      "ai_response_text": "The capital of France is Paris.",
+      "response_audio_path": "media/voice_responses/abc123.mp3",
+      "status": "completed",
+      "created_at": "2024-03-23T10:00:00+00:00",
+      "updated_at": "2024-03-23T10:00:05+00:00"
+    }
+  }
+]
