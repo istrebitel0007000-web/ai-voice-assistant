@@ -29,9 +29,14 @@ def _validate_audio_file(audio_file) -> None:
 def _call_whisper(audio_file) -> str:
     try:
         client = openai.OpenAI()
+        file_tuple = (
+            getattr(audio_file, "name", "audio.wav"),
+            audio_file.read(),
+            getattr(audio_file, "content_type", "audio/wav"),
+        )
         transcript = client.audio.transcriptions.create(
             model="whisper-1",
-            file=audio_file,
+            file=file_tuple,
             response_format="text",
         )
         return transcript.strip()
